@@ -9,6 +9,10 @@
   --coral: #d86f4a;
   --gold: #d6a84f;
   --danger: #a84235;
+  --fish: #4d7891;
+  --fish-dark: #244b5d;
+  --fish-empty: #edf3f3;
+  --fish-empty-line: #9fb5b8;
   --shadow: 0 14px 35px rgba(38, 61, 56, 0.10);
   --radius: 22px;
 }
@@ -133,9 +137,9 @@ select:focus, input:focus, textarea:focus { border-color: var(--sea); box-shadow
 .brand-name { margin-bottom: 8px; font-weight: 700; }
 .tin-meta { min-height: 1.25rem; margin-bottom: 12px; font-size: .85rem; }
 .score-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
-.score-row > div { padding: 10px; text-align: center; background: #f2efe7; border-radius: 12px; }
+.score-row > div { min-width: 0; padding: 10px 6px; text-align: center; background: #f2efe7; border-radius: 12px; }
 .score-row small { display: block; color: var(--muted); font-size: .7rem; }
-.score-row strong { display: block; margin-top: 2px; font-size: 1.15rem; }
+.score-row strong { display: block; margin-top: 4px; font-size: .9rem; }
 .notes-preview { display: -webkit-box; min-height: 2.7em; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: .86rem; line-height: 1.45; }
 .card-footer { padding-top: 10px; border-top: 1px solid var(--line); font-size: .82rem; }
 .buy-again { color: var(--sea); font-weight: 750; }
@@ -153,7 +157,7 @@ select:focus, input:focus, textarea:focus { border-color: var(--sea); box-shadow
 .icon-button { width: 40px; height: 40px; border: 0; border-radius: 50%; background: #ede8dd; color: var(--ink); font-size: 1.6rem; line-height: 1; }
 
 #tinDialog {
-  width: min(720px, calc(100% - 24px));
+  width: min(760px, calc(100% - 24px));
   max-height: calc(100dvh - 24px);
   padding: 0;
   border: 0;
@@ -172,10 +176,87 @@ select:focus, input:focus, textarea:focus { border-color: var(--sea); box-shadow
 textarea { resize: vertical; }
 fieldset { margin: 18px 0; padding: 14px; border: 1px solid var(--line); border-radius: 16px; }
 legend { padding: 0 6px; color: var(--ink); font-weight: 850; }
+
+.ratings-fieldset { padding: 16px; background: #fbfaf5; }
+.rating-help { margin: 0 0 14px; color: var(--muted); font-size: .82rem; line-height: 1.45; }
 .rating-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.rating-input { display: grid; grid-template-columns: 1fr 48px; align-items: center; gap: 8px; }
-.rating-input input[type="range"] { padding: 0; box-shadow: none; accent-color: var(--sea); }
-.rating-input output { display: grid; place-items: center; height: 40px; border-radius: 10px; background: var(--ink); color: #fff; font-weight: 850; }
+.rating-panel { min-width: 0; padding: 14px; border: 1px solid #ded8ca; border-radius: 16px; background: #fff; }
+.rating-panel.kid-rating { background: #fffaf0; border-color: #ead7a9; }
+.rating-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.rating-heading > span { color: var(--ink); font-size: .9rem; font-weight: 850; }
+.rating-score { flex: 0 0 auto; padding: 5px 8px; border-radius: 999px; background: var(--ink); color: #fff; font-size: .74rem; font-weight: 850; }
+.rating-caption { min-height: 1.25em; margin-top: 8px; color: var(--sea-dark); font-size: .82rem; font-weight: 800; text-align: center; }
+
+.sardine-picker {
+  display: grid;
+  grid-template-columns: 42px repeat(5, minmax(42px, 1fr));
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+}
+.zero-rating {
+  height: 46px;
+  padding: 2px;
+  border: 1px solid var(--fish-empty-line);
+  border-radius: 10px;
+  background: var(--fish-empty);
+  color: var(--muted);
+  line-height: 1;
+}
+.zero-rating strong, .zero-rating small { display: block; }
+.zero-rating strong { font-size: 1rem; }
+.zero-rating small { margin-top: 3px; font-size: .55rem; text-transform: uppercase; letter-spacing: .05em; }
+.zero-rating.selected { color: #fff; background: var(--coral); border-color: var(--coral); }
+.zero-rating:focus-visible, .rating-hit:focus-visible { outline: 3px solid rgba(31,111,103,.28); outline-offset: 2px; }
+
+.sardine-slot {
+  position: relative;
+  display: block;
+  min-width: 0;
+  height: 46px;
+  border-radius: 9px;
+}
+.sardine-slot::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  bottom: 10px;
+  left: 50%;
+  width: 1px;
+  background: rgba(111,127,121,.15);
+  pointer-events: none;
+}
+.sardine-slot.active::after { background: rgba(255,255,255,.2); }
+.sardine-visual { position: absolute; inset: 3px 0; display: block; pointer-events: none; }
+.sardine-layer { position: absolute; inset: 0; display: block; overflow: hidden; }
+.sardine-filled { clip-path: inset(0 100% 0 0); }
+.sardine-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.sardine-empty .fish-body { fill: var(--fish-empty); stroke: var(--fish-empty-line); stroke-width: 2.2; }
+.sardine-empty .fish-gill, .sardine-empty .fish-fin, .sardine-empty .fish-mouth { fill: none; stroke: var(--fish-empty-line); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.sardine-empty .fish-eye-ring { fill: #fff; stroke: var(--fish-empty-line); stroke-width: 1.5; }
+.sardine-empty .fish-eye { fill: var(--fish-empty-line); }
+.sardine-filled .fish-body { fill: var(--fish); stroke: var(--fish-dark); stroke-width: 2.2; }
+.sardine-filled .fish-gill, .sardine-filled .fish-fin, .sardine-filled .fish-mouth { fill: none; stroke: #dce9ed; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.sardine-filled .fish-eye-ring { fill: #f8f2df; stroke: var(--fish-dark); stroke-width: 1.5; }
+.sardine-filled .fish-eye { fill: #132c35; }
+.rating-hit { position: absolute; z-index: 4; top: 0; bottom: 0; width: 50%; padding: 0; border: 0; background: transparent; }
+.rating-hit-half { left: 0; border-radius: 9px 0 0 9px; }
+.rating-hit-full { right: 0; border-radius: 0 9px 9px 0; }
+@media (hover: hover) and (pointer: fine) {
+  .rating-hit:hover { background: rgba(31,111,103,.06); }
+}
+
+.rating-key { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 5px; margin-top: 12px; }
+.rating-key span { min-width: 0; padding: 7px 5px; border-radius: 9px; background: #eeeae1; color: var(--muted); font-size: .65rem; text-align: center; line-height: 1.2; }
+.rating-key strong { display: block; margin-bottom: 2px; color: var(--ink); font-size: .78rem; }
+
+.mini-sardines { display: flex; align-items: center; justify-content: center; gap: 1px; height: 22px; margin-top: 4px; }
+.mini-sardine-slot { position: relative; display: block; width: 19px; height: 16px; flex: 0 0 19px; }
+.mini-sardine-slot .sardine-visual { inset: 0; }
+.mini-sardine-slot .sardine-empty .fish-body,
+.mini-sardine-slot .sardine-filled .fish-body { stroke-width: 3; }
+
 .checkbox-row { display: flex !important; grid-template-columns: auto 1fr; align-items: center; }
 .checkbox-row input { width: auto; }
 .dialog-actions { display: flex; align-items: center; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
@@ -185,6 +266,7 @@ legend { padding: 0 6px; color: var(--ink); font-weight: 850; }
   .tin-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .toolbar { grid-template-columns: 1fr 1fr; }
   .search-wrap { grid-column: span 2; }
+  .rating-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 560px) {
@@ -196,9 +278,14 @@ legend { padding: 0 6px; color: var(--ink); font-weight: 850; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .toolbar { grid-template-columns: 1fr 1fr; }
   .tin-grid { grid-template-columns: 1fr; }
-  .form-grid, .rating-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
   .span-2 { grid-column: span 1; }
   #tinDialog { width: 100%; max-height: 93dvh; margin: auto 0 0; border-radius: 24px 24px 0 0; }
-  #tinForm { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
-  .dialog-actions { position: sticky; bottom: 0; margin-inline: -22px; padding: 14px 22px max(14px, env(safe-area-inset-bottom)); background: var(--paper); }
+  #tinForm { padding: 18px; padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+  .ratings-fieldset { margin-inline: -4px; padding: 12px; }
+  .rating-panel { padding: 11px 8px; }
+  .sardine-picker { grid-template-columns: 38px repeat(5, minmax(39px, 1fr)); gap: 2px; }
+  .zero-rating, .sardine-slot { height: 44px; }
+  .rating-key { grid-template-columns: repeat(3, 1fr); }
+  .dialog-actions { position: sticky; bottom: 0; margin-inline: -18px; padding: 14px 18px max(14px, env(safe-area-inset-bottom)); background: var(--paper); }
 }
