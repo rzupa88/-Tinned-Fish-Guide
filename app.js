@@ -1,4 +1,24 @@
 const STORAGE_KEY = "tinned-fish-guide:v1";
+const RATING_MIGRATION_KEY = "tinned-fish-guide:rating-scale-5-v1";
+
+const RATING_WORDS = {
+  0: "Not edible",
+  1: "Don’t Like",
+  2: "OK",
+  3: "Like it",
+  4: "Love it",
+  5: "Amazing",
+};
+
+const SARDINE_SVG = `
+  <svg class="sardine-svg" viewBox="0 0 120 48" aria-hidden="true" focusable="false">
+    <path class="fish-body" d="M7 24C19 10 55 7 90 16L111 6L106 20L117 24L106 28L111 42L90 32C55 41 19 38 7 24Z" />
+    <path class="fish-gill" d="M31 15C36 21 36 27 31 33" />
+    <path class="fish-fin" d="M52 15L61 4L68 17M54 33L62 43L69 31" />
+    <path class="fish-mouth" d="M7 24L18 25" />
+    <circle class="fish-eye-ring" cx="23" cy="20" r="4.2" />
+    <circle class="fish-eye" cx="23" cy="20" r="1.8" />
+  </svg>`;
 
 const els = {
   openAddTin: document.querySelector("#openAddTin"),
@@ -22,8 +42,12 @@ const els = {
   ratingFields: document.querySelector("#ratingFields"),
   parentRating: document.querySelector("#parentRating"),
   parentRatingOutput: document.querySelector("#parentRatingOutput"),
+  parentRatingPicker: document.querySelector("#parentRatingPicker"),
+  parentRatingWord: document.querySelector("#parentRatingWord"),
   daughterRating: document.querySelector("#daughterRating"),
   daughterRatingOutput: document.querySelector("#daughterRatingOutput"),
+  daughterRatingPicker: document.querySelector("#daughterRatingPicker"),
+  daughterRatingWord: document.querySelector("#daughterRatingWord"),
   notes: document.querySelector("#notes"),
   buyAgain: document.querySelector("#buyAgain"),
   searchInput: document.querySelector("#searchInput"),
@@ -42,10 +66,27 @@ const els = {
 
 let tins = loadTins();
 
+function clampHalfRating(value) {
+  if (!Number.isFinite(value)) return null;
+  return Math.max(0, Math.min(5, Math.round(value * 2) / 2));
+}
+
 function loadTins() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    return Array.isArray(parsed) ? parsed : [];
+    let parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (!Array.isArray(parsed)) parsed = [];
+
+    if (!localStorage.getItem(RATING_MIGRATION_KEY)) {
+      parsed = parsed.map((tin) => ({
+        ...tin,
+        parentRating: Number.isFinite(Number(tin.parentRating)) ? clampHalfRating(Number(tin.parentRating) / 2) : null,
+        daughterRating: Number.isFinite(Number(tin.daughterRating)) ? clampHalfRating(Number(tin.daughterRating) / 2) : null,
+      }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      localStorage.setItem(RATING_MIGRATION_KEY, "done");
+    }
+
+    return parsed;
   } catch (error) {
     console.warn("Could not read saved tins.", error);
     return [];
@@ -57,7 +98,7 @@ function saveTins() {
 }
 
 function uid() {
-  if (crypto.randomUUID) return crypto.randomUUID();
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
@@ -81,7 +122,17 @@ function averageScore(tin) {
 }
 
 function formatScore(score) {
-  return Number.isFinite(score) ? score.toFixed(1) : "—";
+  if (!Number.isFinite(score)) return "—";
+  const rounded = Math.round(score * 100) / 100;
+  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded} / 5`;
+}
+
+function ratingDescription(value) {
+  if (!Number.isFinite(value)) return "Pick 0–5 sardines";
+  if (Number.isInteger(value)) return RATING_WORDS[value];
+  const low = Math.floor(value);
+  const high = Math.ceil(value);
+  return `${RATING_WORDS[low]} ↔ ${RATING_WORDS[high]}`;
 }
 
 function formatPrice(price) {
@@ -96,6 +147,97 @@ function formatDate(dateString) {
     .format(new Date(year, month - 1, day));
 }
 
+function makeSardineVisual() {
+  const visual = document.createElement("span");
+  visual.className = "sardine-visual";
+  visual.innerHTML = `
+    <span class="sardine-layer sardine-empty">${SARDINE_SVG}</span>
+    <span class="sardine-layer sardine-filled">${SARDINE_SVG}</span>`;
+  return visual;
+}
+
+function buildRatingPicker(picker, input, output, caption) {
+  picker.replaceChildren();
+
+  const zero = document.createElement("button");
+  zero.type = "button";
+  zero.className = "zero-rating";
+  zero.innerHTML = "<strong>0</strong><small>none</small>";
+  zero.setAttribute("aria-label", "0 sardines, Not edible");
+  zero.addEventListener("click", () => setRating(input, output, caption, picker, 0));
+  picker.append(zero);
+
+  for (let index = 1; index <= 5; index += 1) {
+    const slot = document.createElement("span");
+    slot.className = "sardine-slot";
+    slot.dataset.index = String(index);
+    slot.append(makeSardineVisual());
+
+    const half = document.createElement("button");
+    half.type = "button";
+    half.className = "rating-hit rating-hit-half";
+    half.setAttribute("aria-label", `${index - 0.5} sardines`);
+    half.addEventListener("click", () => setRating(input, output, caption, picker, index - 0.5));
+
+    const full = document.createElement("button");
+    full.type = "button";
+    full.className = "rating-hit rating-hit-full";
+    full.setAttribute("aria-label", `${index} sardines${RATING_WORDS[index] ? `, ${RATING_WORDS[index]}` : ""}`);
+    full.addEventListener("click", () => setRating(input, output, caption, picker, index));
+
+    slot.append(half, full);
+    picker.append(slot);
+  }
+
+  updateRatingPicker(picker, asNumber(input.value));
+}
+
+function updateRatingPicker(picker, score) {
+  const safeScore = Number.isFinite(score) ? score : null;
+  picker.querySelector(".zero-rating")?.classList.toggle("selected", safeScore === 0);
+
+  picker.querySelectorAll(".sardine-slot").forEach((slot) => {
+    const index = Number(slot.dataset.index);
+    const amount = safeScore === null ? 0 : Math.max(0, Math.min(1, safeScore - (index - 1)));
+    const fill = slot.querySelector(".sardine-filled");
+    fill.style.width = `${amount * 100}%`;
+    slot.classList.toggle("active", amount > 0);
+    slot.classList.toggle("half", amount === 0.5);
+  });
+}
+
+function setRating(input, output, caption, picker, value) {
+  const score = value === null ? null : clampHalfRating(value);
+  input.value = score === null ? "" : String(score);
+  output.value = score === null ? "Choose" : formatScore(score);
+  output.textContent = score === null ? "Choose" : formatScore(score);
+  caption.textContent = ratingDescription(score);
+  updateRatingPicker(picker, score);
+}
+
+function setParentRating(value) {
+  setRating(els.parentRating, els.parentRatingOutput, els.parentRatingWord, els.parentRatingPicker, value);
+}
+
+function setDaughterRating(value) {
+  setRating(els.daughterRating, els.daughterRatingOutput, els.daughterRatingWord, els.daughterRatingPicker, value);
+}
+
+function renderMiniSardines(container, score) {
+  container.replaceChildren();
+  container.setAttribute("aria-label", Number.isFinite(score) ? `${formatScore(score)}, ${ratingDescription(score)}` : "Not rated");
+
+  for (let index = 1; index <= 5; index += 1) {
+    const slot = document.createElement("span");
+    slot.className = "mini-sardine-slot";
+    const visual = makeSardineVisual();
+    const amount = Number.isFinite(score) ? Math.max(0, Math.min(1, score - (index - 1))) : 0;
+    visual.querySelector(".sardine-filled").style.width = `${amount * 100}%`;
+    slot.append(visual);
+    container.append(slot);
+  }
+}
+
 function openNewTin() {
   els.tinForm.reset();
   els.tinId.value = "";
@@ -103,9 +245,8 @@ function openNewTin() {
   els.deleteTin.classList.add("hidden");
   els.status.value = "tried";
   els.tastingDate.value = todayLocal();
-  els.parentRating.value = "7.5";
-  els.daughterRating.value = "7.5";
-  syncRatingOutputs();
+  setParentRating(null);
+  setDaughterRating(null);
   syncStatusFields();
   els.tinDialog.showModal();
   requestAnimationFrame(() => els.brand.focus());
@@ -126,23 +267,17 @@ function openEditTin(id) {
   els.price.value = Number.isFinite(tin.price) ? tin.price : "";
   els.tastingDate.value = tin.tastingDate || "";
   els.status.value = tin.status || "tried";
-  els.parentRating.value = Number.isFinite(tin.parentRating) ? tin.parentRating : 7.5;
-  els.daughterRating.value = Number.isFinite(tin.daughterRating) ? tin.daughterRating : 7.5;
+  setParentRating(Number.isFinite(tin.parentRating) ? tin.parentRating : null);
+  setDaughterRating(Number.isFinite(tin.daughterRating) ? tin.daughterRating : null);
   els.notes.value = tin.notes || "";
   els.buyAgain.checked = Boolean(tin.buyAgain);
   els.deleteTin.classList.remove("hidden");
-  syncRatingOutputs();
   syncStatusFields();
   els.tinDialog.showModal();
 }
 
 function closeTinDialog() {
   if (els.tinDialog.open) els.tinDialog.close();
-}
-
-function syncRatingOutputs() {
-  els.parentRatingOutput.value = Number(els.parentRating.value).toFixed(1);
-  els.daughterRatingOutput.value = Number(els.daughterRating.value).toFixed(1);
 }
 
 function syncStatusFields() {
@@ -170,8 +305,8 @@ function handleSubmit(event) {
     price: asNumber(els.price.value),
     tastingDate: els.tastingDate.value || "",
     status: els.status.value,
-    parentRating: tried ? asNumber(els.parentRating.value) : null,
-    daughterRating: tried ? asNumber(els.daughterRating.value) : null,
+    parentRating: tried ? clampHalfRating(asNumber(els.parentRating.value)) : null,
+    daughterRating: tried ? clampHalfRating(asNumber(els.daughterRating.value)) : null,
     notes: els.notes.value.trim(),
     buyAgain: tried ? els.buyAgain.checked : false,
     createdAt: existing?.createdAt || now,
@@ -262,7 +397,7 @@ function renderStats() {
 
   els.statTried.textContent = tried.length;
   els.statWishlist.textContent = wishlist.length;
-  els.statTopScore.textContent = scores.length ? Math.max(...scores).toFixed(1) : "—";
+  els.statTopScore.textContent = scores.length ? formatScore(Math.max(...scores)) : "—";
   els.statSpecies.textContent = species.size;
 }
 
@@ -284,8 +419,8 @@ function makeCard(tin) {
 
   const meta = [tin.fishType, tin.style, formatDate(tin.tastingDate)].filter(Boolean);
   fragment.querySelector(".tin-meta").textContent = meta.join(" · ");
-  fragment.querySelector(".parent-score").textContent = formatScore(tin.parentRating);
-  fragment.querySelector(".daughter-score").textContent = formatScore(tin.daughterRating);
+  renderMiniSardines(fragment.querySelector(".parent-score"), tin.parentRating);
+  renderMiniSardines(fragment.querySelector(".daughter-score"), tin.daughterRating);
   fragment.querySelector(".average-score").textContent = formatScore(average);
   fragment.querySelector(".notes-preview").textContent = tin.notes || (tin.status === "wishlist" ? "Waiting to try this one." : "No tasting notes yet.");
   fragment.querySelector(".price").textContent = [formatPrice(tin.price), tin.retailer].filter(Boolean).join(" · ");
@@ -328,14 +463,15 @@ function render() {
   renderLibrary();
 }
 
+buildRatingPicker(els.parentRatingPicker, els.parentRating, els.parentRatingOutput, els.parentRatingWord);
+buildRatingPicker(els.daughterRatingPicker, els.daughterRating, els.daughterRatingOutput, els.daughterRatingWord);
+
 els.openAddTin.addEventListener("click", openNewTin);
 els.emptyAddTin.addEventListener("click", openNewTin);
 els.closeDialog.addEventListener("click", closeTinDialog);
 els.cancelDialog.addEventListener("click", closeTinDialog);
 els.deleteTin.addEventListener("click", handleDelete);
 els.tinForm.addEventListener("submit", handleSubmit);
-els.parentRating.addEventListener("input", syncRatingOutputs);
-els.daughterRating.addEventListener("input", syncRatingOutputs);
 els.status.addEventListener("change", syncStatusFields);
 
 [els.searchInput, els.statusFilter, els.fishFilter, els.sortSelect].forEach((control) => {
