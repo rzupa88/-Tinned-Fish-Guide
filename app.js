@@ -128,7 +128,7 @@ function formatScore(score) {
 }
 
 function ratingDescription(value) {
-  if (!Number.isFinite(value)) return "Pick 0–5 sardines";
+  if (!Number.isFinite(value)) return "Choose a rating";
   if (Number.isInteger(value)) return RATING_WORDS[value];
   const low = Math.floor(value);
   const high = Math.ceil(value);
@@ -156,63 +156,43 @@ function makeSardineVisual() {
   return visual;
 }
 
-function buildRatingPicker(picker, input, output, caption) {
-  picker.replaceChildren();
-
-  const zero = document.createElement("button");
-  zero.type = "button";
-  zero.className = "zero-rating";
-  zero.innerHTML = "<strong>0</strong><small>none</small>";
-  zero.setAttribute("aria-label", "0 sardines, Not edible");
-  zero.addEventListener("click", () => setRating(input, output, caption, picker, 0));
-  picker.append(zero);
-
+function buildSardineDisplay(container) {
+  container.replaceChildren();
   for (let index = 1; index <= 5; index += 1) {
     const slot = document.createElement("span");
     slot.className = "sardine-slot";
     slot.dataset.index = String(index);
     slot.append(makeSardineVisual());
-
-    const half = document.createElement("button");
-    half.type = "button";
-    half.className = "rating-hit rating-hit-half";
-    half.setAttribute("aria-label", `${index - 0.5} sardines`);
-    half.addEventListener("click", () => setRating(input, output, caption, picker, index - 0.5));
-
-    const full = document.createElement("button");
-    full.type = "button";
-    full.className = "rating-hit rating-hit-full";
-    full.setAttribute("aria-label", `${index} sardines${RATING_WORDS[index] ? `, ${RATING_WORDS[index]}` : ""}`);
-    full.addEventListener("click", () => setRating(input, output, caption, picker, index));
-
-    slot.append(half, full);
-    picker.append(slot);
+    container.append(slot);
   }
-
-  updateRatingPicker(picker, asNumber(input.value));
 }
 
-function updateRatingPicker(picker, score) {
-  const safeScore = Number.isFinite(score) ? score : null;
-  picker.querySelector(".zero-rating")?.classList.toggle("selected", safeScore === 0);
+function updateSardineDisplay(container, score) {
+  const safeScore = Number.isFinite(score) ? clampHalfRating(score) : 0;
+  container.setAttribute(
+    "aria-label",
+    Number.isFinite(score) ? `${formatScore(safeScore)}, ${ratingDescription(safeScore)}` : "Not rated"
+  );
 
-  picker.querySelectorAll(".sardine-slot").forEach((slot) => {
+  container.querySelectorAll(".sardine-slot").forEach((slot) => {
     const index = Number(slot.dataset.index);
-    const amount = safeScore === null ? 0 : Math.max(0, Math.min(1, safeScore - (index - 1)));
+    const amount = Math.max(0, Math.min(1, safeScore - (index - 1)));
     const fill = slot.querySelector(".sardine-filled");
-    fill.style.width = `${amount * 100}%`;
+    fill.style.clipPath = `inset(0 ${100 - amount * 100}% 0 0)`;
     slot.classList.toggle("active", amount > 0);
     slot.classList.toggle("half", amount === 0.5);
   });
 }
 
-function setRating(input, output, caption, picker, value) {
-  const score = value === null ? null : clampHalfRating(value);
-  input.value = score === null ? "" : String(score);
-  output.value = score === null ? "Choose" : formatScore(score);
-  output.textContent = score === null ? "Choose" : formatScore(score);
+function setRating(input, output, caption, display, value) {
+  const score = clampHalfRating(value);
+  if (score === null) return;
+  input.value = String(score);
+  input.style.setProperty("--slider-progress", `${(score / 5) * 100}%`);
+  output.value = formatScore(score);
+  output.textContent = formatScore(score);
   caption.textContent = ratingDescription(score);
-  updateRatingPicker(picker, score);
+  updateSardineDisplay(display, score);
 }
 
 function setParentRating(value) {
@@ -225,14 +205,17 @@ function setDaughterRating(value) {
 
 function renderMiniSardines(container, score) {
   container.replaceChildren();
-  container.setAttribute("aria-label", Number.isFinite(score) ? `${formatScore(score)}, ${ratingDescription(score)}` : "Not rated");
+  container.setAttribute(
+    "aria-label",
+    Number.isFinite(score) ? `${formatScore(score)}, ${ratingDescription(score)}` : "Not rated"
+  );
 
   for (let index = 1; index <= 5; index += 1) {
     const slot = document.createElement("span");
     slot.className = "mini-sardine-slot";
     const visual = makeSardineVisual();
     const amount = Number.isFinite(score) ? Math.max(0, Math.min(1, score - (index - 1))) : 0;
-    visual.querySelector(".sardine-filled").style.width = `${amount * 100}%`;
+    visual.querySelector(".sardine-filled").style.clipPath = `inset(0 ${100 - amount * 100}% 0 0)`;
     slot.append(visual);
     container.append(slot);
   }
@@ -245,8 +228,8 @@ function openNewTin() {
   els.deleteTin.classList.add("hidden");
   els.status.value = "tried";
   els.tastingDate.value = todayLocal();
-  setParentRating(null);
-  setDaughterRating(null);
+  setParentRating(3);
+  setDaughterRating(3);
   syncStatusFields();
   els.tinDialog.showModal();
   requestAnimationFrame(() => els.brand.focus());
@@ -267,8 +250,8 @@ function openEditTin(id) {
   els.price.value = Number.isFinite(tin.price) ? tin.price : "";
   els.tastingDate.value = tin.tastingDate || "";
   els.status.value = tin.status || "tried";
-  setParentRating(Number.isFinite(tin.parentRating) ? tin.parentRating : null);
-  setDaughterRating(Number.isFinite(tin.daughterRating) ? tin.daughterRating : null);
+  setParentRating(Number.isFinite(tin.parentRating) ? tin.parentRating : 3);
+  setDaughterRating(Number.isFinite(tin.daughterRating) ? tin.daughterRating : 3);
   els.notes.value = tin.notes || "";
   els.buyAgain.checked = Boolean(tin.buyAgain);
   els.deleteTin.classList.remove("hidden");
@@ -422,7 +405,8 @@ function makeCard(tin) {
   renderMiniSardines(fragment.querySelector(".parent-score"), tin.parentRating);
   renderMiniSardines(fragment.querySelector(".daughter-score"), tin.daughterRating);
   fragment.querySelector(".average-score").textContent = formatScore(average);
-  fragment.querySelector(".notes-preview").textContent = tin.notes || (tin.status === "wishlist" ? "Waiting to try this one." : "No tasting notes yet.");
+  fragment.querySelector(".notes-preview").textContent =
+    tin.notes || (tin.status === "wishlist" ? "Waiting to try this one." : "No tasting notes yet.");
   fragment.querySelector(".price").textContent = [formatPrice(tin.price), tin.retailer].filter(Boolean).join(" · ");
   fragment.querySelector(".buy-again").textContent = tin.buyAgain ? "✓ Buy again" : "";
 
@@ -463,8 +447,10 @@ function render() {
   renderLibrary();
 }
 
-buildRatingPicker(els.parentRatingPicker, els.parentRating, els.parentRatingOutput, els.parentRatingWord);
-buildRatingPicker(els.daughterRatingPicker, els.daughterRating, els.daughterRatingOutput, els.daughterRatingWord);
+buildSardineDisplay(els.parentRatingPicker);
+buildSardineDisplay(els.daughterRatingPicker);
+setParentRating(3);
+setDaughterRating(3);
 
 els.openAddTin.addEventListener("click", openNewTin);
 els.emptyAddTin.addEventListener("click", openNewTin);
@@ -473,6 +459,8 @@ els.cancelDialog.addEventListener("click", closeTinDialog);
 els.deleteTin.addEventListener("click", handleDelete);
 els.tinForm.addEventListener("submit", handleSubmit);
 els.status.addEventListener("change", syncStatusFields);
+els.parentRating.addEventListener("input", () => setParentRating(asNumber(els.parentRating.value)));
+els.daughterRating.addEventListener("input", () => setDaughterRating(asNumber(els.daughterRating.value)));
 
 [els.searchInput, els.statusFilter, els.fishFilter, els.sortSelect].forEach((control) => {
   control.addEventListener(control.tagName === "INPUT" ? "input" : "change", renderLibrary);
@@ -480,7 +468,11 @@ els.status.addEventListener("change", syncStatusFields);
 
 els.tinDialog.addEventListener("click", (event) => {
   const rect = els.tinDialog.getBoundingClientRect();
-  const outside = event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom;
+  const outside =
+    event.clientX < rect.left ||
+    event.clientX > rect.right ||
+    event.clientY < rect.top ||
+    event.clientY > rect.bottom;
   if (outside) closeTinDialog();
 });
 
