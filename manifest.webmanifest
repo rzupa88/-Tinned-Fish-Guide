@@ -1,0 +1,17 @@
+{
+  "name": "Tinned Fish Guide",
+  "short_name": "Tin Guide",
+  "description": "A family tinned seafood tasting journal.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4efe6",
+  "theme_color": "#f4efe6",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
