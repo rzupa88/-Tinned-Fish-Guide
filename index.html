@@ -9,10 +9,6 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="styles.css" />
-  <style>
-    .sardine-filled { right: auto; }
-    .sardine-filled[style*="50%"] .sardine-svg { width: 200%; max-width: none; }
-  </style>
 </head>
 <body>
   <header class="topbar">
@@ -111,27 +107,29 @@
 
       <fieldset id="ratingFields" class="ratings-fieldset">
         <legend>Sardine ratings</legend>
-        <p class="rating-help">Tap a sardine to rate it. Each sardine has two tappable halves, so you can give half-sardines too.</p>
+        <p class="rating-help">Slide from 0 to 5. The sardines fill as the rating goes up, including half-sardines.</p>
 
         <div class="rating-grid">
           <section class="rating-panel" aria-labelledby="parentRatingLabel">
             <div class="rating-heading">
               <span id="parentRatingLabel">Your rating</span>
-              <output id="parentRatingOutput" class="rating-score">Choose</output>
+              <output id="parentRatingOutput" class="rating-score" for="parentRating">3 / 5</output>
             </div>
-            <input id="parentRating" type="hidden" value="" />
-            <div class="sardine-picker" id="parentRatingPicker" role="group" aria-label="Your sardine rating"></div>
-            <div class="rating-caption" id="parentRatingWord">Pick 0–5 sardines</div>
+            <div class="sardine-display" id="parentRatingPicker" role="img" aria-label="Your sardine rating"></div>
+            <input id="parentRating" class="sardine-slider" type="range" min="0" max="5" step="0.5" value="3" aria-label="Your rating from 0 to 5 sardines" />
+            <div class="slider-scale" aria-hidden="true"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+            <div class="rating-caption" id="parentRatingWord">Like it</div>
           </section>
 
           <section class="rating-panel kid-rating" aria-labelledby="daughterRatingLabel">
             <div class="rating-heading">
               <span id="daughterRatingLabel">Daughter rating</span>
-              <output id="daughterRatingOutput" class="rating-score">Choose</output>
+              <output id="daughterRatingOutput" class="rating-score" for="daughterRating">3 / 5</output>
             </div>
-            <input id="daughterRating" type="hidden" value="" />
-            <div class="sardine-picker" id="daughterRatingPicker" role="group" aria-label="Daughter sardine rating"></div>
-            <div class="rating-caption" id="daughterRatingWord">Pick 0–5 sardines</div>
+            <div class="sardine-display" id="daughterRatingPicker" role="img" aria-label="Daughter sardine rating"></div>
+            <input id="daughterRating" class="sardine-slider" type="range" min="0" max="5" step="0.5" value="3" aria-label="Daughter rating from 0 to 5 sardines" />
+            <div class="slider-scale" aria-hidden="true"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+            <div class="rating-caption" id="daughterRatingWord">Like it</div>
           </section>
         </div>
 
