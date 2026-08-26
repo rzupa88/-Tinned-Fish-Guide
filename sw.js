@@ -1,4 +1,4 @@
-const CACHE_NAME = "tinned-fish-guide-v1";
+const CACHE_NAME = "tinned-fish-guide-v2";
 const APP_SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", (event) => {
