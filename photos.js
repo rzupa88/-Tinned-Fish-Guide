@@ -1,8 +1,8 @@
 (() => {
   const PHOTO_STORAGE_KEY = "tinned-fish-guide:photos-v1";
   const TIN_STORAGE_KEY = "tinned-fish-guide:v1";
-  const MAX_SIDE = 1400;
-  const JPEG_QUALITY = 0.8;
+  const MAX_SIDE = 900;
+  const JPEG_QUALITY = 0.72;
 
   const form = document.querySelector("#tinForm");
   const dialog = document.querySelector("#tinDialog");
@@ -285,7 +285,7 @@
 
   function watchLibrary() {
     const observer = new MutationObserver(() => decorateCards());
-    observer.observe(tinGrid, { childList: true, subtree: true });
+    observer.observe(tinGrid, { childList: true });
 
     ["searchInput", "statusFilter", "fishFilter", "sortSelect"].forEach((id) => {
       document.getElementById(id)?.addEventListener("input", () => setTimeout(decorateCards, 0));
