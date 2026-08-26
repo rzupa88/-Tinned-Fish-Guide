@@ -35,7 +35,7 @@
     <section class="stats-grid" aria-label="Tasting stats">
       <article class="stat-card"><span id="statTried">0</span><small>Tins tried</small></article>
       <article class="stat-card"><span id="statWishlist">0</span><small>Wishlist</small></article>
-      <article class="stat-card"><span id="statTopScore">—</span><small>Top score</small></article>
+      <article class="stat-card"><span id="statTopScore">—</span><small>Top sardine score</small></article>
       <article class="stat-card"><span id="statSpecies">0</span><small>Fish types</small></article>
     </section>
 
@@ -105,11 +105,39 @@
         </label>
       </div>
 
-      <fieldset id="ratingFields">
-        <legend>Ratings</legend>
+      <fieldset id="ratingFields" class="ratings-fieldset">
+        <legend>Sardine ratings</legend>
+        <p class="rating-help">Tap a sardine to rate it. Each sardine has two tappable halves, so you can give half-sardines too.</p>
+
         <div class="rating-grid">
-          <label><span id="parentRatingLabel">Your rating</span><div class="rating-input"><input id="parentRating" type="range" min="1" max="10" step="0.5" value="7.5" /><output id="parentRatingOutput">7.5</output></div></label>
-          <label><span id="daughterRatingLabel">Daughter rating</span><div class="rating-input"><input id="daughterRating" type="range" min="1" max="10" step="0.5" value="7.5" /><output id="daughterRatingOutput">7.5</output></div></label>
+          <section class="rating-panel" aria-labelledby="parentRatingLabel">
+            <div class="rating-heading">
+              <span id="parentRatingLabel">Your rating</span>
+              <output id="parentRatingOutput" class="rating-score">Choose</output>
+            </div>
+            <input id="parentRating" type="hidden" value="" />
+            <div class="sardine-picker" id="parentRatingPicker" role="group" aria-label="Your sardine rating"></div>
+            <div class="rating-caption" id="parentRatingWord">Pick 0–5 sardines</div>
+          </section>
+
+          <section class="rating-panel kid-rating" aria-labelledby="daughterRatingLabel">
+            <div class="rating-heading">
+              <span id="daughterRatingLabel">Daughter rating</span>
+              <output id="daughterRatingOutput" class="rating-score">Choose</output>
+            </div>
+            <input id="daughterRating" type="hidden" value="" />
+            <div class="sardine-picker" id="daughterRatingPicker" role="group" aria-label="Daughter sardine rating"></div>
+            <div class="rating-caption" id="daughterRatingWord">Pick 0–5 sardines</div>
+          </section>
+        </div>
+
+        <div class="rating-key" aria-label="Sardine rating meanings">
+          <span><strong>0</strong> Not edible</span>
+          <span><strong>1</strong> Don’t Like</span>
+          <span><strong>2</strong> OK</span>
+          <span><strong>3</strong> Like it</span>
+          <span><strong>4</strong> Love it</span>
+          <span><strong>5</strong> Amazing</span>
         </div>
       </fieldset>
 
@@ -137,8 +165,8 @@
         <p class="brand-name"></p>
         <p class="tin-meta"></p>
         <div class="score-row">
-          <div><small id="parentCardLabel">You</small><strong class="parent-score">—</strong></div>
-          <div><small id="daughterCardLabel">Daughter</small><strong class="daughter-score">—</strong></div>
+          <div><small id="parentCardLabel">You</small><div class="mini-sardines parent-score" aria-label="Your rating"></div></div>
+          <div><small id="daughterCardLabel">Daughter</small><div class="mini-sardines daughter-score" aria-label="Daughter rating"></div></div>
           <div><small>Average</small><strong class="average-score">—</strong></div>
         </div>
         <p class="notes-preview"></p>
